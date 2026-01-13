@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+
+        .letter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .letter-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .letter-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .letter-card.hidden {
+            display: none;
+        }
+
+        .letter-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-green {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-amber {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-red {
+            background: #ef4444;
+            color: white;
+        }
+
+        .letter-card.green {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .letter-card.amber {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .letter-card.red {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-letter {
+            font-size: 72px;
+            font-weight: bold;
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .knowledge-section {
+            margin-bottom: 25px;
+        }
+
+        .knowledge-section h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .knowledge-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .knowledge-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .knowledge-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .knowledge-btn.active {
+            border-width: 3px;
+        }
+
+        .knowledge-btn.red.active {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .knowledge-btn.amber.active {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .knowledge-btn.green.active {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .close-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .close-btn:hover {
+            background: #5568d3;
+        }
+
+        .history-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .history-item {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .export-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .export-modal.active {
+            display: flex;
+        }
+
+        .export-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .export-content h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .export-code {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 15px 0;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .copy-btn {
+            width: 100%;
+            padding: 15px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .copy-btn:hover {
+            background: #059669;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                white-space: nowrap;
+            }
+
+            .letter-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+                gap: 8px;
+            }
+
+            .letter-display {
+                font-size: 28px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Letter Tracker</h1>
+        <p class="subtitle">Following Erik Hoel's phonics method</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="uppercase">Uppercase</button>
+            <button class="tab" data-tab="lowercase">Lowercase</button>
+        </div>
+
+        <div id="uppercase-content" class="tab-content active">
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="upperGreenCount">0</span>
+                    <span class="stat-label">Green (Knows)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="upperAmberCount">0</span>
+                    <span class="stat-label">Amber (Learning)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="upperRedCount">26</span>
+                    <span class="stat-label">Red (Not Yet)</span>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="upperSearchInput" placeholder="Search for a letter...">
+            </div>
+
+            <div class="letter-grid" id="upperLetterGrid"></div>
+
+            <div class="action-buttons">
+                <button class="action-btn" onclick="exportData()">📤 Export Data</button>
+                <button class="action-btn" onclick="openImportModal()">📥 Import Data</button>
+            </div>
+
+            <p class="info-text">
+                Tap any letter to update progress. Currently tracking: Phonics (sound)
+            </p>
+        </div>
+
+        <div id="lowercase-content" class="tab-content">
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-number" id="lowerGreenCount">0</span>
+                    <span class="stat-label">Green (Knows)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="lowerAmberCount">0</span>
+                    <span class="stat-label">Amber (Learning)</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="lowerRedCount">26</span>
+                    <span class="stat-label">Red (Not Yet)</span>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="lowerSearchInput" placeholder="Search for a letter...">
+            </div>
+
+            <div class="letter-grid" id="lowerLetterGrid"></div>
+
+            <div class="action-buttons">
+                <button class="action-btn" onclick="exportData()">📤 Export Data</button>
+                <button class="action-btn" onclick="openImportModal()">📥 Import Data</button>
+            </div>
+
+            <p class="info-text">
+                Tap any letter to update progress. Currently tracking: Phonics (sound)
+            </p>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-letter" id="modalLetter">A</div>
+
+            <div class="knowledge-section">
+                <h3 id="modalTypeLabel">Phonics (Sound)</h3>
+                <div class="knowledge-buttons">
+                    <button class="knowledge-btn red" data-type="phonics" data-level="red">Red<br>Not Yet</button>
+                    <button class="knowledge-btn amber" data-type="phonics" data-level="amber">Amber<br>Learning</button>
+                    <button class="knowledge-btn green" data-type="phonics" data-level="green">Green<br>Knows</button>
+                </div>
+            </div>
+
+            <div class="knowledge-section" style="opacity: 0.5;">
+                <h3>Letter Name (Coming Soon)</h3>
+                <div class="knowledge-buttons">
+                    <button class="knowledge-btn" disabled>Red</button>
+                    <button class="knowledge-btn" disabled>Amber</button>
+                    <button class="knowledge-btn" disabled>Green</button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>Recent Updates</h3>
+                <div id="historyList"></div>
+            </div>
+
+            <button class="close-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <div class="export-modal" id="exportModal">
+        <div class="export-content">
+            <h2>Export/Import Data</h2>
+            <p style="color: #666; margin-bottom: 15px;">Copy this code to sync data to another device, or paste imported code below.</p>
+            <textarea class="export-code" id="exportCode" placeholder="Paste import code here..."></textarea>
+            <button class="copy-btn" onclick="copyExportCode()">Copy Code</button>
+            <button class="close-btn" onclick="importData()">Import Code</button>
+            <button class="close-btn" onclick="closeExportModal()" style="background: #666;">Cancel</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Letter frequency order (most common to least common in English)
+        const lettersByFrequency = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W', 'F', 'G', 'Y', 'P', 'B', 'V', 'K', 'J', 'X', 'Q', 'Z'];
+
+        // Initialize data structure
+        let letterData = {};
+        let currentLetter = '';
+        let currentCase = 'uppercase';
+
+        // Initialize letter data
+        function initializeLetterData() {
+            const saved = localStorage.getItem('letter-tracker-data');
+            if (saved) {
+                letterData = JSON.parse(saved);
+            } else {
+                lettersByFrequency.forEach(letter => {
+                    letterData[letter] = {
+                        'uppercase-phonics': 'red',
+                        'uppercase-name': 'red',
+                        'lowercase-phonics': 'red',
+                        'lowercase-name': 'red',
+                        history: []
+                    };
+                });
+                saveData();
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('letter-tracker-data', JSON.stringify(letterData));
+            updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+            let upperGreen = 0, upperAmber = 0, upperRed = 0;
+            let lowerGreen = 0, lowerAmber = 0, lowerRed = 0;
+
+            Object.values(letterData).forEach(data => {
+                const upperStatus = data['uppercase-phonics'];
+                if (upperStatus === 'green') upperGreen++;
+                else if (upperStatus === 'amber') upperAmber++;
+                else upperRed++;
+
+                const lowerStatus = data['lowercase-phonics'];
+                if (lowerStatus === 'green') lowerGreen++;
+                else if (lowerStatus === 'amber') lowerAmber++;
+                else lowerRed++;
+            });
+
+            document.getElementById('upperGreenCount').textContent = upperGreen;
+            document.getElementById('upperAmberCount').textContent = upperAmber;
+            document.getElementById('upperRedCount').textContent = upperRed;
+
+            document.getElementById('lowerGreenCount').textContent = lowerGreen;
+            document.getElementById('lowerAmberCount').textContent = lowerAmber;
+            document.getElementById('lowerRedCount').textContent = lowerRed;
+        }
+
+        // Render letter grid
+        function renderLetterGrid(caseType) {
+            const gridId = caseType === 'uppercase' ? 'upperLetterGrid' : 'lowerLetterGrid';
+            const grid = document.getElementById(gridId);
+            const dataType = caseType + '-phonics';
+            grid.innerHTML = '';
+
+            lettersByFrequency.forEach(letter => {
+                const data = letterData[letter];
+                const status = data[dataType];
+                const displayLetter = caseType === 'uppercase' ? letter : letter.toLowerCase();
+
+                const card = document.createElement('div');
+                card.className = `letter-card ${status}`;
+                card.dataset.letter = letter;
+                card.dataset.case = caseType;
+                card.onclick = () => openModal(letter, caseType);
+
+                card.innerHTML = `
+                    <div class="letter-display">${displayLetter}</div>
+                    <div class="status-badge status-${status}">${status}</div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Open modal
+        window.openModal = function(letter, caseType) {
+            currentLetter = letter;
+            currentCase = caseType;
+            const displayLetter = caseType === 'uppercase' ? letter : letter.toLowerCase();
+            document.getElementById('modalLetter').textContent = displayLetter;
+            document.getElementById('modalTypeLabel').textContent = caseType.charAt(0).toUpperCase() + caseType.slice(1) + ' Phonics (Sound)';
+            document.getElementById('modal').classList.add('active');
+
+            // Update button states
+            const dataType = caseType + '-phonics';
+            const data = letterData[letter];
+            document.querySelectorAll('.knowledge-btn').forEach(btn => {
+                btn.classList.remove('active');
+                const type = btn.dataset.type;
+                const level = btn.dataset.level;
+                if (type === 'phonics' && data[dataType] === level) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show history
+            renderHistory(letter);
+        }
+
+        // Close modal
+        window.closeModal = function() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Render history
+        function renderHistory(letter) {
+            const historyList = document.getElementById('historyList');
+            const history = letterData[letter].history || [];
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="history-item">No updates yet</p>';
+                return;
+            }
+
+            historyList.innerHTML = history.slice(-5).reverse().map(entry => {
+                const date = new Date(entry.date);
+                return `<div class="history-item">
+                    ${entry.type.replace('-', ' ')}: ${entry.from} → ${entry.to}
+                    <br><small>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                </div>`;
+            }).join('');
+        }
+
+        // Handle knowledge button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('knowledge-btn') && !e.target.disabled) {
+                const level = e.target.dataset.level;
+                const dataType = currentCase + '-phonics';
+                const oldLevel = letterData[currentLetter][dataType];
+
+                if (oldLevel !== level) {
+                    letterData[currentLetter][dataType] = level;
+                    letterData[currentLetter].history.push({
+                        date: new Date().toISOString(),
+                        type: dataType,
+                        from: oldLevel,
+                        to: level
+                    });
+
+                    saveData();
+                    renderLetterGrid('uppercase');
+                    renderLetterGrid('lowercase');
+                    openModal(currentLetter, currentCase);
+                }
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tabName + '-content').classList.add('active');
+            });
+        });
+
+        // Search functionality
+        document.getElementById('upperSearchInput').addEventListener('input', (e) => {
+            searchLetters(e.target.value, 'upperLetterGrid');
+        });
+
+        document.getElementById('lowerSearchInput').addEventListener('input', (e) => {
+            searchLetters(e.target.value, 'lowerLetterGrid');
+        });
+
+        function searchLetters(search, gridId) {
+            const grid = document.getElementById(gridId);
+            const searchLower = search.toLowerCase();
+            grid.querySelectorAll('.letter-card').forEach(card => {
+                const letter = card.dataset.letter.toLowerCase();
+                if (letter.includes(searchLower) || search === '') {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // Export functionality
+        window.exportData = function() {
+            const exportCode = btoa(JSON.stringify(letterData));
+            document.getElementById('exportCode').value = exportCode;
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        window.openImportModal = function() {
+            document.getElementById('exportCode').value = '';
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        window.copyExportCode = function() {
+            const textarea = document.getElementById('exportCode');
+            textarea.select();
+            document.execCommand('copy');
+            alert('Code copied! You can now paste it on another device.');
+        }
+
+        window.importData = function() {
+            const code = document.getElementById('exportCode').value.trim();
+            if (!code) {
+                alert('Please paste an import code first.');
+                return;
+            }
+
+            try {
+                const imported = JSON.parse(atob(code));
+                letterData = imported;
+                saveData();
+                renderLetterGrid('uppercase');
+                renderLetterGrid('lowercase');
+                closeExportModal();
+                alert('Data imported successfully!');
+            } catch (e) {
+                alert('Invalid import code. Please check and try again.');
+            }
+        }
+
+        window.closeExportModal = function() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        // Close modal on background click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        document.getElementById('exportModal').addEventListener('click', (e) => {
+            if (e.target.id === 'exportModal') {
+                closeExportModal();
+            }
+        });
+
+        // Initialize app
+        initializeLetterData();
+        renderLetterGrid('uppercase');
+        renderLetterGrid('lowercase');
+        updateStats();
+    </script>
+</body>
+</html>
