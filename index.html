@@ -194,6 +194,25 @@
             background: #fef2f2;
         }
 
+        .review-badge {
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .review-due {
+            background: #fbbf24;
+            color: #92400e;
+        }
+
+        .review-recent {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -445,7 +464,7 @@
 <body>
     <div class="container">
         <h1>📚 Letter Tracker</h1>
-        <p class="subtitle">Following Erik Hoel's phonics method</p>
+        <p class="subtitle">Track letter learning progress with phonics</p>
 
         <div class="tabs">
             <button class="tab active" data-tab="uppercase">Uppercase</button>
@@ -568,6 +587,13 @@
         let currentLetter = '';
         let currentCase = 'uppercase';
 
+        // Spaced repetition intervals (in days)
+        const reviewIntervals = {
+            'red': 1,    // Review daily
+            'amber': 2,  // Review every 2 days
+            'green': 5   // Review every 5 days
+        };
+
         // Initialize letter data
         function initializeLetterData() {
             const saved = localStorage.getItem('letter-tracker-data');
@@ -580,11 +606,30 @@
                         'uppercase-name': 'red',
                         'lowercase-phonics': 'red',
                         'lowercase-name': 'red',
+                        'uppercase-phonics-last-reviewed': null,
+                        'lowercase-phonics-last-reviewed': null,
                         history: []
                     };
                 });
                 saveData();
             }
+        }
+
+        // Calculate days since last review
+        function getDaysSinceReview(lastReviewDate) {
+            if (!lastReviewDate) return 999; // Never reviewed
+            const now = new Date();
+            const last = new Date(lastReviewDate);
+            const diffTime = Math.abs(now - last);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        // Check if review is due
+        function isReviewDue(status, lastReviewDate) {
+            const daysSince = getDaysSinceReview(lastReviewDate);
+            const interval = reviewIntervals[status];
+            return daysSince >= interval;
         }
 
         // Save data to localStorage
@@ -624,11 +669,13 @@
             const gridId = caseType === 'uppercase' ? 'upperLetterGrid' : 'lowerLetterGrid';
             const grid = document.getElementById(gridId);
             const dataType = caseType + '-phonics';
+            const lastReviewedKey = caseType + '-phonics-last-reviewed';
             grid.innerHTML = '';
 
             lettersByFrequency.forEach(letter => {
                 const data = letterData[letter];
                 const status = data[dataType];
+                const lastReviewed = data[lastReviewedKey];
                 const displayLetter = caseType === 'uppercase' ? letter : letter.toLowerCase();
 
                 const card = document.createElement('div');
@@ -637,9 +684,24 @@
                 card.dataset.case = caseType;
                 card.onclick = () => openModal(letter, caseType);
 
+                // Calculate review badge
+                const daysSince = getDaysSinceReview(lastReviewed);
+                const isDue = isReviewDue(status, lastReviewed);
+
+                let reviewBadgeHTML = '';
+                if (lastReviewed === null) {
+                    reviewBadgeHTML = '<div class="review-badge review-due">⏱️ Not tested</div>';
+                } else if (isDue) {
+                    reviewBadgeHTML = '<div class="review-badge review-due">⏱️ Due today</div>';
+                } else {
+                    const daysText = daysSince === 0 ? 'Today' : daysSince === 1 ? '1 day ago' : `${daysSince} days ago`;
+                    reviewBadgeHTML = `<div class="review-badge review-recent">Last: ${daysText}</div>`;
+                }
+
                 card.innerHTML = `
                     <div class="letter-display">${displayLetter}</div>
                     <div class="status-badge status-${status}">${status}</div>
+                    ${reviewBadgeHTML}
                 `;
 
                 grid.appendChild(card);
@@ -700,8 +762,13 @@
             if (e.target.classList.contains('knowledge-btn') && !e.target.disabled) {
                 const level = e.target.dataset.level;
                 const dataType = currentCase + '-phonics';
+                const lastReviewedKey = currentCase + '-phonics-last-reviewed';
                 const oldLevel = letterData[currentLetter][dataType];
 
+                // Always update last reviewed timestamp when interacting with a letter
+                letterData[currentLetter][lastReviewedKey] = new Date().toISOString();
+
+                // If status changed, also record in history
                 if (oldLevel !== level) {
                     letterData[currentLetter][dataType] = level;
                     letterData[currentLetter].history.push({
@@ -710,12 +777,20 @@
                         from: oldLevel,
                         to: level
                     });
-
-                    saveData();
-                    renderLetterGrid('uppercase');
-                    renderLetterGrid('lowercase');
-                    openModal(currentLetter, currentCase);
+                } else {
+                    // Status stayed same but was reviewed (re-certified)
+                    letterData[currentLetter].history.push({
+                        date: new Date().toISOString(),
+                        type: dataType,
+                        from: oldLevel,
+                        to: oldLevel + ' (reviewed)'
+                    });
                 }
+
+                saveData();
+                renderLetterGrid('uppercase');
+                renderLetterGrid('lowercase');
+                openModal(currentLetter, currentCase);
             }
         });
 

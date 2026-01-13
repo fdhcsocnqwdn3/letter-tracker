@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raph's Letter Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #667eea;
+        }
+
+        .letter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .letter-card {
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .letter-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .letter-card.hidden {
+            display: none;
+        }
+
+        .letter-display {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-green {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-amber {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-red {
+            background: #ef4444;
+            color: white;
+        }
+
+        .letter-card.green {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .letter-card.amber {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .letter-card.red {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-letter {
+            font-size: 72px;
+            font-weight: bold;
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .knowledge-section {
+            margin-bottom: 25px;
+        }
+
+        .knowledge-section h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .knowledge-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .knowledge-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .knowledge-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .knowledge-btn.active {
+            border-width: 3px;
+        }
+
+        .knowledge-btn.red.active {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .knowledge-btn.amber.active {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .knowledge-btn.green.active {
+            background: #f0fdf4;
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .close-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .close-btn:hover {
+            background: #5568d3;
+        }
+
+        .history-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .history-item {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .letter-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+                gap: 8px;
+            }
+
+            .letter-display {
+                font-size: 28px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Raph's Letter Tracker</h1>
+        <p class="subtitle">Following Erik Hoel's phonics method</p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-number" id="greenCount">0</span>
+                <span class="stat-label">Green (Knows)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="amberCount">0</span>
+                <span class="stat-label">Amber (Learning)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="redCount">26</span>
+                <span class="stat-label">Red (Not Yet)</span>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search for a letter...">
+        </div>
+
+        <div class="letter-grid" id="letterGrid"></div>
+
+        <p class="info-text">
+            Tap any letter to update Raph's progress. Currently focusing on: Uppercase Phonics
+        </p>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-letter" id="modalLetter">A</div>
+
+            <div class="knowledge-section">
+                <h3>Uppercase Phonics (Sound)</h3>
+                <div class="knowledge-buttons">
+                    <button class="knowledge-btn red" data-type="uppercase-phonics" data-level="red">Red<br>Not Yet</button>
+                    <button class="knowledge-btn amber" data-type="uppercase-phonics" data-level="amber">Amber<br>Learning</button>
+                    <button class="knowledge-btn green" data-type="uppercase-phonics" data-level="green">Green<br>Knows</button>
+                </div>
+            </div>
+
+            <div class="knowledge-section" style="opacity: 0.5;">
+                <h3>Uppercase Name (Coming Soon)</h3>
+                <div class="knowledge-buttons">
+                    <button class="knowledge-btn" disabled>Red</button>
+                    <button class="knowledge-btn" disabled>Amber</button>
+                    <button class="knowledge-btn" disabled>Green</button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>Recent Updates</h3>
+                <div id="historyList"></div>
+            </div>
+
+            <button class="close-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Letter frequency order (most common to least common in English)
+        const lettersByFrequency = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W', 'F', 'G', 'Y', 'P', 'B', 'V', 'K', 'J', 'X', 'Q', 'Z'];
+
+        // Initialize data structure
+        let letterData = {};
+        let currentLetter = '';
+
+        // Initialize letter data
+        function initializeLetterData() {
+            const saved = localStorage.getItem('raphs-letters');
+            if (saved) {
+                letterData = JSON.parse(saved);
+            } else {
+                lettersByFrequency.forEach(letter => {
+                    letterData[letter] = {
+                        'uppercase-phonics': 'red',
+                        'uppercase-name': 'red',
+                        'lowercase-phonics': 'red',
+                        'lowercase-name': 'red',
+                        history: []
+                    };
+                });
+                saveData();
+            }
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('raphs-letters', JSON.stringify(letterData));
+            updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+            let green = 0, amber = 0, red = 0;
+
+            Object.values(letterData).forEach(data => {
+                const status = data['uppercase-phonics'];
+                if (status === 'green') green++;
+                else if (status === 'amber') amber++;
+                else red++;
+            });
+
+            document.getElementById('greenCount').textContent = green;
+            document.getElementById('amberCount').textContent = amber;
+            document.getElementById('redCount').textContent = red;
+        }
+
+        // Render letter grid
+        function renderLetterGrid() {
+            const grid = document.getElementById('letterGrid');
+            grid.innerHTML = '';
+
+            lettersByFrequency.forEach(letter => {
+                const data = letterData[letter];
+                const status = data['uppercase-phonics'];
+
+                const card = document.createElement('div');
+                card.className = `letter-card ${status}`;
+                card.dataset.letter = letter;
+                card.onclick = () => openModal(letter);
+
+                card.innerHTML = `
+                    <div class="letter-display">${letter}</div>
+                    <div class="status-badge status-${status}">${status}</div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Open modal
+        window.openModal = function(letter) {
+            currentLetter = letter;
+            document.getElementById('modalLetter').textContent = letter;
+            document.getElementById('modal').classList.add('active');
+
+            // Update button states
+            const data = letterData[letter];
+            document.querySelectorAll('.knowledge-btn').forEach(btn => {
+                btn.classList.remove('active');
+                const type = btn.dataset.type;
+                const level = btn.dataset.level;
+                if (type && data[type] === level) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show history
+            renderHistory(letter);
+        }
+
+        // Close modal
+        window.closeModal = function() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Render history
+        function renderHistory(letter) {
+            const historyList = document.getElementById('historyList');
+            const history = letterData[letter].history || [];
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="history-item">No updates yet</p>';
+                return;
+            }
+
+            historyList.innerHTML = history.slice(-5).reverse().map(entry => {
+                const date = new Date(entry.date);
+                return `<div class="history-item">
+                    ${entry.type.replace('-', ' ')}: ${entry.from} → ${entry.to}
+                    <br><small>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+                </div>`;
+            }).join('');
+        }
+
+        // Handle knowledge button clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('knowledge-btn') && !e.target.disabled) {
+                const type = e.target.dataset.type;
+                const level = e.target.dataset.level;
+                const oldLevel = letterData[currentLetter][type];
+
+                if (oldLevel !== level) {
+                    letterData[currentLetter][type] = level;
+                    letterData[currentLetter].history.push({
+                        date: new Date().toISOString(),
+                        type: type,
+                        from: oldLevel,
+                        to: level
+                    });
+
+                    saveData();
+                    renderLetterGrid();
+                    openModal(currentLetter); // Refresh modal
+                }
+            }
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            document.querySelectorAll('.letter-card').forEach(card => {
+                const letter = card.dataset.letter.toLowerCase();
+                if (letter.includes(search) || search === '') {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        });
+
+        // Close modal on background click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                closeModal();
+            }
+        });
+
+        // Initialize app
+        initializeLetterData();
+        renderLetterGrid();
+        updateStats();
+    </script>
+</body>
+</html>
