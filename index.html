@@ -213,6 +213,85 @@
             color: #6b7280;
         }
 
+        .stats-section {
+            margin-bottom: 25px;
+        }
+
+        .stats-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #f3f4f6;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 8px;
+        }
+
+        .progress-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .progress-segment.red {
+            background: #ef4444;
+        }
+
+        .progress-segment.amber {
+            background: #f59e0b;
+        }
+
+        .progress-segment.green {
+            background: #10b981;
+        }
+
+        .progress-legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 200px;
+            position: relative;
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 8px;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -472,18 +551,29 @@
         </div>
 
         <div id="uppercase-content" class="tab-content active">
-            <div class="stats">
-                <div class="stat-card">
-                    <span class="stat-number" id="upperGreenCount">0</span>
-                    <span class="stat-label">Green (Knows)</span>
+            <div class="stats-section">
+                <div class="stats-title">Overall Progress</div>
+                <div class="progress-bar-container" id="upperProgressBar"></div>
+                <div class="progress-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #10b981;"></div>
+                        <span>Green: <span id="upperGreenCount">0</span></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #f59e0b;"></div>
+                        <span>Amber: <span id="upperAmberCount">0</span></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ef4444;"></div>
+                        <span>Red: <span id="upperRedCount">26</span></span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="upperAmberCount">0</span>
-                    <span class="stat-label">Amber (Learning)</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="upperRedCount">26</span>
-                    <span class="stat-label">Red (Not Yet)</span>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-title">Progress Over Time (Last 30 Days)</div>
+                <div class="chart-container">
+                    <canvas id="upperChart" class="chart-canvas"></canvas>
                 </div>
             </div>
 
@@ -504,18 +594,29 @@
         </div>
 
         <div id="lowercase-content" class="tab-content">
-            <div class="stats">
-                <div class="stat-card">
-                    <span class="stat-number" id="lowerGreenCount">0</span>
-                    <span class="stat-label">Green (Knows)</span>
+            <div class="stats-section">
+                <div class="stats-title">Overall Progress</div>
+                <div class="progress-bar-container" id="lowerProgressBar"></div>
+                <div class="progress-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #10b981;"></div>
+                        <span>Green: <span id="lowerGreenCount">0</span></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #f59e0b;"></div>
+                        <span>Amber: <span id="lowerAmberCount">0</span></span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: #ef4444;"></div>
+                        <span>Red: <span id="lowerRedCount">26</span></span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="lowerAmberCount">0</span>
-                    <span class="stat-label">Amber (Learning)</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="lowerRedCount">26</span>
-                    <span class="stat-label">Red (Not Yet)</span>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-title">Progress Over Time (Last 30 Days)</div>
+                <div class="chart-container">
+                    <canvas id="lowerChart" class="chart-canvas"></canvas>
                 </div>
             </div>
 
@@ -662,6 +763,157 @@
             document.getElementById('lowerGreenCount').textContent = lowerGreen;
             document.getElementById('lowerAmberCount').textContent = lowerAmber;
             document.getElementById('lowerRedCount').textContent = lowerRed;
+
+            // Update progress bars
+            renderProgressBar('uppercase', upperGreen, upperAmber, upperRed);
+            renderProgressBar('lowercase', lowerGreen, lowerAmber, lowerRed);
+
+            // Update charts
+            renderProgressChart('uppercase');
+            renderProgressChart('lowercase');
+        }
+
+        // Render progress bar
+        function renderProgressBar(caseType, green, amber, red) {
+            const total = 26;
+            const greenPct = (green / total) * 100;
+            const amberPct = (amber / total) * 100;
+            const redPct = (red / total) * 100;
+
+            const barId = caseType === 'uppercase' ? 'upperProgressBar' : 'lowerProgressBar';
+            const bar = document.getElementById(barId);
+
+            bar.innerHTML = `
+                ${green > 0 ? `<div class="progress-segment green" style="width: ${greenPct}%">${green > 0 ? green : ''}</div>` : ''}
+                ${amber > 0 ? `<div class="progress-segment amber" style="width: ${amberPct}%">${amber > 0 ? amber : ''}</div>` : ''}
+                ${red > 0 ? `<div class="progress-segment red" style="width: ${redPct}%">${red > 0 ? red : ''}</div>` : ''}
+            `;
+        }
+
+        // Render progress chart
+        function renderProgressChart(caseType) {
+            const canvasId = caseType === 'uppercase' ? 'upperChart' : 'lowerChart';
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const dataType = caseType + '-phonics';
+
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 30;
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+
+            // Calculate daily counts for last 30 days
+            const days = 30;
+            const today = new Date();
+            const dailyData = [];
+
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
+
+                let greenCount = 0, amberCount = 0, redCount = 0;
+
+                lettersByFrequency.forEach(letter => {
+                    const data = letterData[letter];
+                    const history = data.history || [];
+
+                    // Find the most recent status at or before this date
+                    let statusAtDate = 'red'; // default
+                    for (const entry of history) {
+                        const entryDate = new Date(entry.date);
+                        entryDate.setHours(0, 0, 0, 0);
+                        if (entryDate <= date && entry.type === dataType) {
+                            statusAtDate = entry.to.replace(' (reviewed)', '');
+                        }
+                    }
+
+                    if (statusAtDate === 'green') greenCount++;
+                    else if (statusAtDate === 'amber') amberCount++;
+                    else redCount++;
+                });
+
+                dailyData.push({ date, greenCount, amberCount, redCount });
+            }
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Find max value for scaling
+            const maxValue = 26;
+
+            // Draw grid lines
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+
+            // Draw lines
+            const drawLine = (data, color) => {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                data.forEach((point, index) => {
+                    const x = padding + (chartWidth / (days - 1)) * index;
+                    const y = padding + chartHeight - (point / maxValue) * chartHeight;
+
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+
+                ctx.stroke();
+            };
+
+            // Draw each line
+            drawLine(dailyData.map(d => d.greenCount), '#10b981');
+            drawLine(dailyData.map(d => d.amberCount), '#f59e0b');
+            drawLine(dailyData.map(d => d.redCount), '#ef4444');
+
+            // Draw Y-axis labels
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 5; i++) {
+                const value = Math.round((maxValue / 5) * (5 - i));
+                const y = padding + (chartHeight / 5) * i;
+                ctx.fillText(value, padding - 8, y + 4);
+            }
+
+            // Draw X-axis labels (first, middle, last day)
+            ctx.textAlign = 'center';
+            const firstDate = dailyData[0].date;
+            const midDate = dailyData[Math.floor(days / 2)].date;
+            const lastDate = dailyData[days - 1].date;
+
+            ctx.fillText(
+                `${firstDate.getMonth() + 1}/${firstDate.getDate()}`,
+                padding,
+                height - 5
+            );
+            ctx.fillText(
+                `${midDate.getMonth() + 1}/${midDate.getDate()}`,
+                padding + chartWidth / 2,
+                height - 5
+            );
+            ctx.fillText(
+                `${lastDate.getMonth() + 1}/${lastDate.getDate()}`,
+                width - padding,
+                height - 5
+            );
         }
 
         // Render letter grid
