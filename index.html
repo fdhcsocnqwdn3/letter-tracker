@@ -879,8 +879,13 @@
             // Clear canvas
             ctx.clearRect(0, 0, width, height);
 
-            // Find max value for scaling
-            const maxValue = 26;
+            // Find max value for scaling - use the highest value across all days
+            let maxDataValue = 0;
+            dailyData.forEach(day => {
+                maxDataValue = Math.max(maxDataValue, day.greenCount, day.amberCount, day.redCount);
+            });
+            // Add a small buffer (10%) and round up to nearest 5 for cleaner labels
+            const maxValue = Math.max(5, Math.ceil((maxDataValue * 1.1) / 5) * 5);
 
             // Draw grid lines
             ctx.strokeStyle = '#e5e7eb';
