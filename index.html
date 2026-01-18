@@ -571,7 +571,7 @@
             </div>
 
             <div class="stats-section">
-                <div class="stats-title">Progress Over Time (Last 30 Days)</div>
+                <div class="stats-title" id="upperChartTitle">Progress Over Time</div>
                 <div class="chart-container">
                     <canvas id="upperChart" class="chart-canvas"></canvas>
                 </div>
@@ -614,7 +614,7 @@
             </div>
 
             <div class="stats-section">
-                <div class="stats-title">Progress Over Time (Last 30 Days)</div>
+                <div class="stats-title" id="lowerChartTitle">Progress Over Time</div>
                 <div class="chart-container">
                     <canvas id="lowerChart" class="chart-canvas"></canvas>
                 </div>
@@ -807,9 +807,44 @@
             const chartWidth = width - padding * 2;
             const chartHeight = height - padding * 2;
 
-            // Calculate daily counts for last 30 days
-            const days = 30;
+            // Find the earliest history entry to determine start date
+            let earliestDate = null;
+            lettersByFrequency.forEach(letter => {
+                const data = letterData[letter];
+                const history = data.history || [];
+                history.forEach(entry => {
+                    if (entry.type === dataType) {
+                        const entryDate = new Date(entry.date);
+                        if (!earliestDate || entryDate < earliestDate) {
+                            earliestDate = entryDate;
+                        }
+                    }
+                });
+            });
+
+            // If no history exists, show just today
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (!earliestDate) {
+                earliestDate = today;
+            } else {
+                earliestDate.setHours(0, 0, 0, 0);
+            }
+
+            // Calculate number of days since first use
+            const daysSinceStart = Math.floor((today - earliestDate) / (1000 * 60 * 60 * 24)) + 1;
+            const days = Math.max(1, daysSinceStart); // At least 1 day
+
+            // Update chart title
+            const titleId = caseType === 'uppercase' ? 'upperChartTitle' : 'lowerChartTitle';
+            const titleElement = document.getElementById(titleId);
+            if (days === 1) {
+                titleElement.textContent = 'Progress Over Time (Day 1)';
+            } else {
+                titleElement.textContent = `Progress Over Time (${days} Days)`;
+            }
+
             const dailyData = [];
 
             for (let i = days - 1; i >= 0; i--) {
@@ -893,27 +928,53 @@
                 ctx.fillText(value, padding - 8, y + 4);
             }
 
-            // Draw X-axis labels (first, middle, last day)
+            // Draw X-axis labels
             ctx.textAlign = 'center';
-            const firstDate = dailyData[0].date;
-            const midDate = dailyData[Math.floor(days / 2)].date;
-            const lastDate = dailyData[days - 1].date;
 
-            ctx.fillText(
-                `${firstDate.getMonth() + 1}/${firstDate.getDate()}`,
-                padding,
-                height - 5
-            );
-            ctx.fillText(
-                `${midDate.getMonth() + 1}/${midDate.getDate()}`,
-                padding + chartWidth / 2,
-                height - 5
-            );
-            ctx.fillText(
-                `${lastDate.getMonth() + 1}/${lastDate.getDate()}`,
-                width - padding,
-                height - 5
-            );
+            if (days === 1) {
+                // Just show today
+                const date = dailyData[0].date;
+                ctx.fillText(
+                    `${date.getMonth() + 1}/${date.getDate()}`,
+                    padding + chartWidth / 2,
+                    height - 5
+                );
+            } else if (days === 2) {
+                // Show first and last
+                const firstDate = dailyData[0].date;
+                const lastDate = dailyData[days - 1].date;
+                ctx.fillText(
+                    `${firstDate.getMonth() + 1}/${firstDate.getDate()}`,
+                    padding,
+                    height - 5
+                );
+                ctx.fillText(
+                    `${lastDate.getMonth() + 1}/${lastDate.getDate()}`,
+                    width - padding,
+                    height - 5
+                );
+            } else {
+                // Show first, middle, last
+                const firstDate = dailyData[0].date;
+                const midDate = dailyData[Math.floor(days / 2)].date;
+                const lastDate = dailyData[days - 1].date;
+
+                ctx.fillText(
+                    `${firstDate.getMonth() + 1}/${firstDate.getDate()}`,
+                    padding,
+                    height - 5
+                );
+                ctx.fillText(
+                    `${midDate.getMonth() + 1}/${midDate.getDate()}`,
+                    padding + chartWidth / 2,
+                    height - 5
+                );
+                ctx.fillText(
+                    `${lastDate.getMonth() + 1}/${lastDate.getDate()}`,
+                    width - padding,
+                    height - 5
+                );
+            }
         }
 
         // Render letter grid
