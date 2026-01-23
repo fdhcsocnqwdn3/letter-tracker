@@ -716,12 +716,18 @@
             }
         }
 
-        // Calculate days since last review
+        // Calculate days since last review (using calendar days, not 24-hour periods)
         function getDaysSinceReview(lastReviewDate) {
             if (!lastReviewDate) return 999; // Never reviewed
+
+            // Set both dates to midnight to compare calendar days
             const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
             const last = new Date(lastReviewDate);
-            const diffTime = Math.abs(now - last);
+            last.setHours(0, 0, 0, 0);
+
+            const diffTime = now - last;
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             return diffDays;
         }
