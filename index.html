@@ -503,6 +503,125 @@
             background: #059669;
         }
 
+        /* Word Practice Styles */
+        .practice-status {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .practice-empty {
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .practice-empty h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .practice-empty p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .practice-card {
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sentence-display {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .target-word {
+            font-size: 72px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 8px;
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .word-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .practice-nav {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .nav-btn.primary:hover {
+            background: #5568d3;
+        }
+
+        .practice-info {
+            text-align: center;
+        }
+
+        .word-counter {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .letters-used {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .letter-chip {
+            background: #10b981;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 15px;
@@ -537,6 +656,25 @@
             .action-buttons {
                 grid-template-columns: 1fr;
             }
+
+            .target-word {
+                font-size: 48px;
+                letter-spacing: 4px;
+                padding: 15px 25px;
+            }
+
+            .sentence-display {
+                font-size: 18px;
+            }
+
+            .practice-nav {
+                flex-wrap: wrap;
+            }
+
+            .nav-btn {
+                flex: 1;
+                min-width: 100px;
+            }
         }
     </style>
 </head>
@@ -548,6 +686,7 @@
         <div class="tabs">
             <button class="tab active" data-tab="uppercase">Uppercase</button>
             <button class="tab" data-tab="lowercase">Lowercase</button>
+            <button class="tab" data-tab="practice">Word Practice</button>
         </div>
 
         <div id="uppercase-content" class="tab-content active">
@@ -635,6 +774,46 @@
                 Tap any letter to update progress. Currently tracking: Phonics (sound)
             </p>
         </div>
+
+        <div id="practice-content" class="tab-content">
+            <!-- Status message -->
+            <div class="practice-status" id="practiceStatus"></div>
+
+            <!-- Empty state -->
+            <div class="practice-empty" id="practiceEmpty">
+                <h3>Learn a few more letters!</h3>
+                <p>You need at least one vowel (A, E, I, O, U) and some consonants to form words.</p>
+                <p><strong>Suggested next:</strong> A, T, S, N</p>
+            </div>
+
+            <!-- Practice card -->
+            <div class="practice-card" id="practiceCard" style="display: none;">
+                <div class="sentence-display" id="sentenceDisplay">
+                    <!-- "The dog was chasing a..." -->
+                </div>
+                <div class="target-word" id="targetWord">
+                    <!-- CAT -->
+                </div>
+                <div class="word-info" id="wordInfo">
+                    <!-- Word family: -at -->
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="practice-nav" id="practiceNav" style="display: none;">
+                <button class="nav-btn" id="prevSentence">← Sentence</button>
+                <button class="nav-btn primary" id="nextWord">Next Word →</button>
+                <button class="nav-btn" id="nextSentence">Sentence →</button>
+            </div>
+
+            <!-- Word count and letters used -->
+            <div class="practice-info" id="practiceInfo" style="display: none;">
+                <div class="word-counter" id="wordCounter">Word 1 of 5</div>
+                <div class="letters-used" id="lettersUsed">
+                    <!-- Shows which green letters are being used -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal" id="modal">
@@ -682,6 +861,970 @@
     <script type="module">
         // Letter frequency order (most common to least common in English)
         const lettersByFrequency = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W', 'F', 'G', 'Y', 'P', 'B', 'V', 'K', 'J', 'X', 'Q', 'Z'];
+
+        // Word Database for Practice Feature
+        const WORD_DATABASE = {
+            words: [
+                // 2-letter words (easier starting point per Hoel)
+                { word: "at", letters: ["a","t"], type: "vc" },
+                { word: "it", letters: ["i","t"], type: "vc" },
+                { word: "in", letters: ["i","n"], type: "vc" },
+                { word: "on", letters: ["o","n"], type: "vc" },
+                { word: "up", letters: ["u","p"], type: "vc" },
+                { word: "an", letters: ["a","n"], type: "vc" },
+                { word: "am", letters: ["a","m"], type: "vc" },
+                { word: "if", letters: ["i","f"], type: "vc" },
+                { word: "is", letters: ["i","s"], type: "vc" },
+                { word: "us", letters: ["u","s"], type: "vc" },
+
+                // -at family
+                { word: "cat", letters: ["c","a","t"], type: "cvc", family: "-at" },
+                { word: "bat", letters: ["b","a","t"], type: "cvc", family: "-at" },
+                { word: "hat", letters: ["h","a","t"], type: "cvc", family: "-at" },
+                { word: "sat", letters: ["s","a","t"], type: "cvc", family: "-at" },
+                { word: "mat", letters: ["m","a","t"], type: "cvc", family: "-at" },
+                { word: "rat", letters: ["r","a","t"], type: "cvc", family: "-at" },
+                { word: "fat", letters: ["f","a","t"], type: "cvc", family: "-at" },
+                { word: "pat", letters: ["p","a","t"], type: "cvc", family: "-at" },
+
+                // -an family
+                { word: "can", letters: ["c","a","n"], type: "cvc", family: "-an" },
+                { word: "fan", letters: ["f","a","n"], type: "cvc", family: "-an" },
+                { word: "man", letters: ["m","a","n"], type: "cvc", family: "-an" },
+                { word: "ran", letters: ["r","a","n"], type: "cvc", family: "-an" },
+                { word: "pan", letters: ["p","a","n"], type: "cvc", family: "-an" },
+                { word: "tan", letters: ["t","a","n"], type: "cvc", family: "-an" },
+                { word: "van", letters: ["v","a","n"], type: "cvc", family: "-an" },
+
+                // -ad family
+                { word: "dad", letters: ["d","a","d"], type: "cvc", family: "-ad" },
+                { word: "sad", letters: ["s","a","d"], type: "cvc", family: "-ad" },
+                { word: "mad", letters: ["m","a","d"], type: "cvc", family: "-ad" },
+                { word: "bad", letters: ["b","a","d"], type: "cvc", family: "-ad" },
+                { word: "had", letters: ["h","a","d"], type: "cvc", family: "-ad" },
+
+                // -ap family
+                { word: "cap", letters: ["c","a","p"], type: "cvc", family: "-ap" },
+                { word: "map", letters: ["m","a","p"], type: "cvc", family: "-ap" },
+                { word: "nap", letters: ["n","a","p"], type: "cvc", family: "-ap" },
+                { word: "tap", letters: ["t","a","p"], type: "cvc", family: "-ap" },
+                { word: "gap", letters: ["g","a","p"], type: "cvc", family: "-ap" },
+                { word: "lap", letters: ["l","a","p"], type: "cvc", family: "-ap" },
+
+                // -ag family
+                { word: "bag", letters: ["b","a","g"], type: "cvc", family: "-ag" },
+                { word: "tag", letters: ["t","a","g"], type: "cvc", family: "-ag" },
+                { word: "wag", letters: ["w","a","g"], type: "cvc", family: "-ag" },
+                { word: "rag", letters: ["r","a","g"], type: "cvc", family: "-ag" },
+
+                // -en family
+                { word: "pen", letters: ["p","e","n"], type: "cvc", family: "-en" },
+                { word: "hen", letters: ["h","e","n"], type: "cvc", family: "-en" },
+                { word: "ten", letters: ["t","e","n"], type: "cvc", family: "-en" },
+                { word: "men", letters: ["m","e","n"], type: "cvc", family: "-en" },
+                { word: "den", letters: ["d","e","n"], type: "cvc", family: "-en" },
+
+                // -et family
+                { word: "pet", letters: ["p","e","t"], type: "cvc", family: "-et" },
+                { word: "wet", letters: ["w","e","t"], type: "cvc", family: "-et" },
+                { word: "set", letters: ["s","e","t"], type: "cvc", family: "-et" },
+                { word: "net", letters: ["n","e","t"], type: "cvc", family: "-et" },
+                { word: "get", letters: ["g","e","t"], type: "cvc", family: "-et" },
+                { word: "bet", letters: ["b","e","t"], type: "cvc", family: "-et" },
+                { word: "jet", letters: ["j","e","t"], type: "cvc", family: "-et" },
+
+                // -ed family
+                { word: "bed", letters: ["b","e","d"], type: "cvc", family: "-ed" },
+                { word: "red", letters: ["r","e","d"], type: "cvc", family: "-ed" },
+                { word: "fed", letters: ["f","e","d"], type: "cvc", family: "-ed" },
+
+                // -ig family
+                { word: "pig", letters: ["p","i","g"], type: "cvc", family: "-ig" },
+                { word: "big", letters: ["b","i","g"], type: "cvc", family: "-ig" },
+                { word: "dig", letters: ["d","i","g"], type: "cvc", family: "-ig" },
+                { word: "wig", letters: ["w","i","g"], type: "cvc", family: "-ig" },
+                { word: "fig", letters: ["f","i","g"], type: "cvc", family: "-ig" },
+                { word: "jig", letters: ["j","i","g"], type: "cvc", family: "-ig" },
+
+                // -it family
+                { word: "sit", letters: ["s","i","t"], type: "cvc", family: "-it" },
+                { word: "hit", letters: ["h","i","t"], type: "cvc", family: "-it" },
+                { word: "bit", letters: ["b","i","t"], type: "cvc", family: "-it" },
+                { word: "fit", letters: ["f","i","t"], type: "cvc", family: "-it" },
+                { word: "pit", letters: ["p","i","t"], type: "cvc", family: "-it" },
+                { word: "kit", letters: ["k","i","t"], type: "cvc", family: "-it" },
+
+                // -in family
+                { word: "pin", letters: ["p","i","n"], type: "cvc", family: "-in" },
+                { word: "win", letters: ["w","i","n"], type: "cvc", family: "-in" },
+                { word: "fin", letters: ["f","i","n"], type: "cvc", family: "-in" },
+                { word: "bin", letters: ["b","i","n"], type: "cvc", family: "-in" },
+                { word: "tin", letters: ["t","i","n"], type: "cvc", family: "-in" },
+
+                // -ip family
+                { word: "dip", letters: ["d","i","p"], type: "cvc", family: "-ip" },
+                { word: "hip", letters: ["h","i","p"], type: "cvc", family: "-ip" },
+                { word: "lip", letters: ["l","i","p"], type: "cvc", family: "-ip" },
+                { word: "rip", letters: ["r","i","p"], type: "cvc", family: "-ip" },
+                { word: "sip", letters: ["s","i","p"], type: "cvc", family: "-ip" },
+                { word: "tip", letters: ["t","i","p"], type: "cvc", family: "-ip" },
+                { word: "zip", letters: ["z","i","p"], type: "cvc", family: "-ip" },
+
+                // -og family
+                { word: "dog", letters: ["d","o","g"], type: "cvc", family: "-og" },
+                { word: "log", letters: ["l","o","g"], type: "cvc", family: "-og" },
+                { word: "hog", letters: ["h","o","g"], type: "cvc", family: "-og" },
+                { word: "fog", letters: ["f","o","g"], type: "cvc", family: "-og" },
+                { word: "jog", letters: ["j","o","g"], type: "cvc", family: "-og" },
+
+                // -ot family
+                { word: "hot", letters: ["h","o","t"], type: "cvc", family: "-ot" },
+                { word: "pot", letters: ["p","o","t"], type: "cvc", family: "-ot" },
+                { word: "dot", letters: ["d","o","t"], type: "cvc", family: "-ot" },
+                { word: "cot", letters: ["c","o","t"], type: "cvc", family: "-ot" },
+                { word: "got", letters: ["g","o","t"], type: "cvc", family: "-ot" },
+                { word: "lot", letters: ["l","o","t"], type: "cvc", family: "-ot" },
+                { word: "not", letters: ["n","o","t"], type: "cvc", family: "-ot" },
+
+                // -op family
+                { word: "top", letters: ["t","o","p"], type: "cvc", family: "-op" },
+                { word: "mop", letters: ["m","o","p"], type: "cvc", family: "-op" },
+                { word: "hop", letters: ["h","o","p"], type: "cvc", family: "-op" },
+                { word: "pop", letters: ["p","o","p"], type: "cvc", family: "-op" },
+                { word: "cop", letters: ["c","o","p"], type: "cvc", family: "-op" },
+
+                // -ob family
+                { word: "job", letters: ["j","o","b"], type: "cvc", family: "-ob" },
+                { word: "mob", letters: ["m","o","b"], type: "cvc", family: "-ob" },
+                { word: "sob", letters: ["s","o","b"], type: "cvc", family: "-ob" },
+                { word: "cob", letters: ["c","o","b"], type: "cvc", family: "-ob" },
+
+                // -ug family
+                { word: "bug", letters: ["b","u","g"], type: "cvc", family: "-ug" },
+                { word: "hug", letters: ["h","u","g"], type: "cvc", family: "-ug" },
+                { word: "mug", letters: ["m","u","g"], type: "cvc", family: "-ug" },
+                { word: "rug", letters: ["r","u","g"], type: "cvc", family: "-ug" },
+                { word: "tug", letters: ["t","u","g"], type: "cvc", family: "-ug" },
+                { word: "dug", letters: ["d","u","g"], type: "cvc", family: "-ug" },
+                { word: "jug", letters: ["j","u","g"], type: "cvc", family: "-ug" },
+
+                // -un family
+                { word: "sun", letters: ["s","u","n"], type: "cvc", family: "-un" },
+                { word: "run", letters: ["r","u","n"], type: "cvc", family: "-un" },
+                { word: "fun", letters: ["f","u","n"], type: "cvc", family: "-un" },
+                { word: "bun", letters: ["b","u","n"], type: "cvc", family: "-un" },
+                { word: "gun", letters: ["g","u","n"], type: "cvc", family: "-un" },
+
+                // -ut family
+                { word: "cut", letters: ["c","u","t"], type: "cvc", family: "-ut" },
+                { word: "nut", letters: ["n","u","t"], type: "cvc", family: "-ut" },
+                { word: "hut", letters: ["h","u","t"], type: "cvc", family: "-ut" },
+                { word: "but", letters: ["b","u","t"], type: "cvc", family: "-ut" },
+                { word: "gut", letters: ["g","u","t"], type: "cvc", family: "-ut" },
+
+                // -ub family
+                { word: "cub", letters: ["c","u","b"], type: "cvc", family: "-ub" },
+                { word: "tub", letters: ["t","u","b"], type: "cvc", family: "-ub" },
+                { word: "rub", letters: ["r","u","b"], type: "cvc", family: "-ub" },
+                { word: "sub", letters: ["s","u","b"], type: "cvc", family: "-ub" },
+                { word: "hub", letters: ["h","u","b"], type: "cvc", family: "-ub" },
+
+                // -um family
+                { word: "gum", letters: ["g","u","m"], type: "cvc", family: "-um" },
+                { word: "hum", letters: ["h","u","m"], type: "cvc", family: "-um" },
+                { word: "sum", letters: ["s","u","m"], type: "cvc", family: "-um" },
+                { word: "mum", letters: ["m","u","m"], type: "cvc", family: "-um" },
+            ],
+
+            sentences: {
+                // 2-letter words - engaging per Hoel's style
+                "at": [
+                    "I was playing hide and seek, and I found a spider sitting right there...",
+                    "The little bird landed and now it's sitting...",
+                    "Look out the window! Can you see what's...",
+                    "We went to the park and we're finally...",
+                ],
+                "it": [
+                    "The ball rolled under the sofa and I can't find...",
+                    "There's something in my hand - can you see...",
+                    "A butterfly flew past and I want to catch...",
+                    "Here's your toy! Go ahead and grab...",
+                ],
+                "in": [
+                    "Whoa, Mr. Finger Man! Be careful not to fall...",
+                    "The ball bounced and bounced and then it went...",
+                    "All the toys are hiding together...",
+                    "It's raining outside, so let's go...",
+                ],
+                "on": [
+                    "It's getting dark, so let's turn the light...",
+                    "The cat jumped up and now it's sitting...",
+                    "Ready for a piggyback ride? Climb...",
+                    "Here's your favourite show - turn it...",
+                ],
+                "up": [
+                    "The red balloon floated high and went...",
+                    "The sun is rising in the morning sky - wake...",
+                    "Time to get out of bed! Stand...",
+                    "The rocket blasted off and went...",
+                ],
+                "an": [
+                    "In the story, there was once upon a time...",
+                    "For breakfast, I wanted to eat...",
+                    "We went to the zoo and I saw...",
+                ],
+                "am": [
+                    "Who's that in the mirror? It's me! Here I...",
+                    "You asked who's ready for the park, and I...",
+                    "Can you guess how old I...",
+                ],
+                "if": [
+                    "I wonder what would happen...",
+                    "Let's think about what we'd do...",
+                    "Wouldn't it be amazing...",
+                ],
+                "is": [
+                    "I lost my teddy bear - where...",
+                    "Look who came to visit! It...",
+                    "Something smells yummy - what...",
+                ],
+                "us": [
+                    "Mummy said it's time for an adventure - come with...",
+                    "We're stuck and need someone to help...",
+                    "Let's all go together - wait for...",
+                ],
+
+                // -at family - engaging sentences
+                "cat": [
+                    "I heard a noise in the garden and when I looked, it was a fluffy...",
+                    "The dog was chasing something through the house - it was chasing a...",
+                    "Sitting by the warm fire and purring softly was a...",
+                    "Who's that climbing up the tree? It's a...",
+                ],
+                "bat": [
+                    "When the sun went down, flying through the dark night sky was a...",
+                    "Deep inside the spooky cave, hanging upside down, was a...",
+                    "To play baseball and hit the ball far, you need a...",
+                    "At Halloween, decorations showed a black...",
+                ],
+                "hat": [
+                    "It was so cold outside that Daddy put on a warm woolly...",
+                    "The birthday girl wore a sparkly party...",
+                    "The magician did a magic trick and pulled a rabbit from his...",
+                    "On top of the snowman's head, we put a funny...",
+                ],
+                "sat": [
+                    "After running around all day, the tired cat...",
+                    "Everyone gathered for story time, and Grandma...",
+                    "The teddy bear was on the shelf where he...",
+                    "When the music stopped, everyone...",
+                ],
+                "mat": [
+                    "Before coming inside, remember to wipe your muddy feet on the...",
+                    "The cat found a cozy spot and curled up on the...",
+                    "At the front door, we put a welcome...",
+                    "For yoga, unroll your exercise...",
+                ],
+                "rat": [
+                    "I was in the kitchen making dinner when I thought I saw a...",
+                    "The owl flew down from the barn to catch a...",
+                    "Running through the maze, looking for cheese, was a...",
+                    "In the story, the Pied Piper led away every...",
+                ],
+                "fat": [
+                    "The cat ate too much fish and now he's very...",
+                    "This pig loves to eat and is getting quite...",
+                    "After all those treats, the hamster looked quite...",
+                ],
+                "pat": [
+                    "The friendly dog wagged his tail and wanted a gentle...",
+                    "Give the soft bunny a little...",
+                    "The horse nudged my hand because he wanted a...",
+                    "That was a good job! Let me give you a...",
+                ],
+
+                // -an family
+                "can": [
+                    "The fizzy drink comes in a shiny...",
+                    "I believe in you - I know you...",
+                    "We need to water the plants, so grab the watering...",
+                    "You're so clever! Yes, you...",
+                ],
+                "fan": [
+                    "It's so hot today! Let's turn on the...",
+                    "To cool down at the beach, we need a...",
+                    "The princess waved a pretty paper...",
+                    "When the room is stuffy, use a...",
+                ],
+                "man": [
+                    "The ice cream truck has arrived! Here comes the ice cream...",
+                    "Who delivers our letters every morning? The post...",
+                    "In the story, there lived a kind old...",
+                    "A boy grows up and becomes a...",
+                ],
+                "ran": [
+                    "The bunny saw a fox and quickly...",
+                    "When the rain started, everyone...",
+                    "In the race, the cheetah...",
+                    "The gingerbread man jumped up and...",
+                ],
+                "pan": [
+                    "Mummy is cooking eggs in a frying...",
+                    "To make pancakes, you need a special...",
+                    "The sizzling bacon was cooking in the...",
+                    "Watch the chef flip the food in the...",
+                ],
+                "tan": [
+                    "After playing all day at the sunny beach, I got a...",
+                    "My skin turned brown from the sunshine - I got a...",
+                    "The lifeguard who sits in the sun has a nice...",
+                ],
+                "van": [
+                    "All the boxes and furniture went into the moving...",
+                    "The ice cream...",
+                    "Beep beep! Here comes the delivery...",
+                    "Our camping trip needs a big...",
+                ],
+
+                // -ad family
+                "dad": [
+                    "Who gives the best piggyback rides? My...",
+                    "I made a special Father's Day card for my...",
+                    "Playing football in the garden with...",
+                    "Who's that at the door? It's...",
+                ],
+                "sad": [
+                    "The puppy's eyes looked droopy and...",
+                    "When my balloon popped, I felt...",
+                    "The rain washed away the sandcastle and the girl was...",
+                    "Without any friends to play with, the boy felt...",
+                ],
+                "mad": [
+                    "The bull saw red and was very...",
+                    "When someone takes your toys, it can make you...",
+                    "The scientist in the story was a bit...",
+                    "Don't get upset, don't get...",
+                ],
+                "bad": [
+                    "The wolf in the story was very...",
+                    "Eating too many sweets can be...",
+                    "The opposite of good is...",
+                    "That thunderstorm last night was really...",
+                ],
+                "had": [
+                    "Yesterday at the park, we...",
+                    "For breakfast this morning, I...",
+                    "The princess...",
+                    "Once upon a time, there lived a king who...",
+                ],
+
+                // -ap family
+                "cap": [
+                    "The baseball player put on his favourite...",
+                    "To keep the sun out of my eyes, I need a...",
+                    "The captain wore a special...",
+                    "On his head, the sailor wore a...",
+                ],
+                "map": [
+                    "To find the buried treasure, we need a...",
+                    "The explorer unfolded her adventure...",
+                    "Where are we going? Let's check the...",
+                    "Pirates always have a treasure...",
+                ],
+                "nap": [
+                    "The baby yawned and needed a...",
+                    "The sleepy cat curled up for a...",
+                    "After lunch, Grandpa takes a little...",
+                    "Close your eyes, time for a...",
+                ],
+                "tap": [
+                    "To get water, turn on the...",
+                    "The dancer did a quick...",
+                    "Knock knock! Give the door a little...",
+                    "I felt someone gently...",
+                ],
+                "gap": [
+                    "Watch out! Mind the...",
+                    "The ball rolled into the...",
+                    "Between the two mountains was a big...",
+                    "There's a little...",
+                ],
+                "lap": [
+                    "Come sit on my...",
+                    "The cat loves to curl up on my...",
+                    "Story time! Climb onto my...",
+                    "The runner finished another...",
+                ],
+
+                // -ag family
+                "bag": [
+                    "Pack all your toys into the...",
+                    "For school, you need a...",
+                    "The shopping goes in the...",
+                    "Santa carries presents in a big red...",
+                ],
+                "tag": [
+                    "Chase me! Let's play...",
+                    "Every toy has a price...",
+                    "On the present, there was a name...",
+                    "Ready, set, go! You're it -...",
+                ],
+                "wag": [
+                    "The happy puppy started to...",
+                    "When a dog is excited, watch its tail...",
+                    "The golden retriever gave a big tail...",
+                    "Dogs show they're happy when they...",
+                ],
+                "rag": [
+                    "Wipe up the spill with a...",
+                    "Clean the car with a soft...",
+                    "The old doll was made of...",
+                ],
+
+                // -en family
+                "pen": [
+                    "To write your name, use this...",
+                    "The author picked up her...",
+                    "Draw a picture with a coloured...",
+                    "The pigs on the farm live in a...",
+                ],
+                "hen": [
+                    "The eggs we eat for breakfast come from a...",
+                    "Clucking around the farmyard was a brown...",
+                    "The little chicks followed their mother...",
+                    "In the coop, sitting on eggs, was a...",
+                ],
+                "ten": [
+                    "Count all your fingers - there are...",
+                    "After nine comes the number...",
+                    "I can count to...",
+                    "How many toes do you have? You have...",
+                ],
+                "men": [
+                    "The brave firefighters were strong...",
+                    "Building the house were three...",
+                    "In the rowing boat sat two...",
+                    "The cave explorers were adventurous...",
+                ],
+                "den": [
+                    "The sleepy lion rested in his...",
+                    "The fox family lived in a cozy underground...",
+                    "Where bears sleep in winter is called a...",
+                    "Let's build a pillow fort and make a...",
+                ],
+
+                // -et family
+                "pet": [
+                    "A dog or cat that you love is called a...",
+                    "For my birthday, I want a new...",
+                    "The fluffy hamster is my favourite...",
+                    "We went to the shop to pick out a...",
+                ],
+                "wet": [
+                    "After swimming in the pool, I got completely...",
+                    "The rain poured down and everything got...",
+                    "Don't sit there - the paint is still...",
+                    "The towel is soaking...",
+                ],
+                "set": [
+                    "On your marks, get...",
+                    "The sun goes down when it starts to...",
+                    "Time to lay the table and...",
+                    "Ready, get...",
+                ],
+                "net": [
+                    "To catch fish, use a...",
+                    "The butterfly got caught in the...",
+                    "The goal has a big...",
+                    "We scooped up tadpoles with the...",
+                ],
+                "get": [
+                    "Run to the toy box and...",
+                    "If you want it, go...",
+                    "Hurry up! We need to...",
+                    "It's present time - go...",
+                ],
+                "bet": [
+                    "I think I know the answer - I...",
+                    "You can do it! I...",
+                    "That was the best ice cream ever, I...",
+                ],
+                "jet": [
+                    "Zooming through the sky at super speed is a...",
+                    "The pilot flew the big...",
+                    "Leaving a white trail in the sky was a...",
+                    "Faster than a bird flies a...",
+                ],
+
+                // -ed family
+                "bed": [
+                    "After a long day of playing, time to go to...",
+                    "The teddy bear is waiting in your cozy...",
+                    "Where do you sleep at night? In your...",
+                    "The princess couldn't sleep because of the pea under her...",
+                ],
+                "red": [
+                    "A fire engine is always painted bright...",
+                    "Strawberries are sweet and...",
+                    "Roses are...",
+                    "The stop sign is always...",
+                ],
+                "fed": [
+                    "The hungry baby bird was...",
+                    "After breakfast, everyone has been...",
+                    "We just...",
+                    "The farmer...",
+                ],
+
+                // -ig family
+                "pig": [
+                    "Rolling in the mud on the farm is a happy...",
+                    "Oink oink! That's the sound of a...",
+                    "The farmyard animal with a curly tail is a...",
+                    "In the story, the wolf tried to blow down the house of the...",
+                ],
+                "big": [
+                    "The elephant is so very, very...",
+                    "When I grow up, I want to be...",
+                    "Wow, that dinosaur is really...",
+                    "A whale is the most...",
+                ],
+                "dig": [
+                    "The dog went to the garden to...",
+                    "Get the shovel and let's...",
+                    "To plant seeds, first we need to...",
+                    "At the beach, we love to...",
+                ],
+                "wig": [
+                    "The clown wore a funny coloured...",
+                    "For the costume party, I wore a silly...",
+                    "On her head was a bright pink...",
+                    "The judge in old times wore a white...",
+                ],
+                "fig": [
+                    "A sweet purple fruit from the tree is a...",
+                    "Newton sat under a...",
+                    "This dried fruit is called a...",
+                ],
+                "jig": [
+                    "The leprechaun did a little Irish...",
+                    "When you're happy, dance a...",
+                    "The sailor danced a merry...",
+                ],
+
+                // -it family
+                "sit": [
+                    "The dog did a trick - he can...",
+                    "Find a comfy chair and have a...",
+                    "Time for dinner, everyone come and...",
+                    "On the bench in the park, let's...",
+                ],
+                "hit": [
+                    "Swing the bat and try to...",
+                    "The ball is coming - ready to...",
+                    "The song was a big...",
+                    "The baseball player got a...",
+                ],
+                "bit": [
+                    "Can I have just a tiny little...",
+                    "The hungry mouse took a small...",
+                    "Wait a...",
+                    "That's just a tiny...",
+                ],
+                "fit": [
+                    "Try on the shoes and see if they...",
+                    "The puzzle piece will...",
+                    "Running and playing keeps you...",
+                    "Does this lid...",
+                ],
+                "pit": [
+                    "Don't swallow the cherry stone - spit out the...",
+                    "The peach has a hard...",
+                    "At the centre of the avocado is a big...",
+                ],
+                "kit": [
+                    "A baby cat is called a...",
+                    "For the boo-boo, get the first aid...",
+                    "The footballer wore his team...",
+                    "Everything you need is in the...",
+                ],
+
+                // -in family
+                "pin": [
+                    "Hold the fabric together with a...",
+                    "Knock down all the bowling...",
+                    "For sewing, you need a needle and a...",
+                    "Pop the balloon with a...",
+                ],
+                "win": [
+                    "In the race, everyone wants to...",
+                    "Play the game and try to...",
+                    "Who do you think will...",
+                    "With practice, you can...",
+                ],
+                "fin": [
+                    "The dolphin swims with its...",
+                    "On the shark's back is a big...",
+                    "Fish use their...",
+                    "The whale waved its...",
+                ],
+                "bin": [
+                    "Throw the rubbish in the...",
+                    "The recycling goes in the green...",
+                    "Don't litter - use the...",
+                    "Empty wrappers go in the...",
+                ],
+                "tin": [
+                    "The beans are kept inside a...",
+                    "A can is also called a...",
+                    "Open the...",
+                ],
+
+                // -ip family
+                "dip": [
+                    "Put the carrot in the yummy...",
+                    "Take a chip and have a...",
+                    "Into the pool for a quick...",
+                    "The sauce is for you to...",
+                ],
+                "hip": [
+                    "Put your hands on your...",
+                    "Shake your hips - shake that...",
+                    "Dancing moves your...",
+                    "The bone at the side is called the...",
+                ],
+                "lip": [
+                    "Put the chapstick on your...",
+                    "Kiss with your...",
+                    "Don't bite your...",
+                    "A smile uses every...",
+                ],
+                "rip": [
+                    "Be careful not to tear and...",
+                    "Open the present but don't...",
+                    "Pull gently so it doesn't...",
+                    "The paper might...",
+                ],
+                "sip": [
+                    "Take a small drink, just a little...",
+                    "Drink your juice one...",
+                    "Careful, it's hot - just take a...",
+                    "Through the straw, take a...",
+                ],
+                "tip": [
+                    "Careful! Don't let the cup...",
+                    "At the very top is the...",
+                    "The point at the end is the...",
+                    "Here's a helpful...",
+                ],
+                "zip": [
+                    "Do up your coat - pull the...",
+                    "Your jacket needs its...",
+                    "Close the bag with the...",
+                    "The tent door has a...",
+                ],
+
+                // -og family
+                "dog": [
+                    "Woof woof! Who's a good...",
+                    "My best friend is my pet...",
+                    "The fluffy puppy will grow up to be a...",
+                    "Fetching the ball is the happy...",
+                ],
+                "log": [
+                    "The frog sat on a floating...",
+                    "For the campfire, we need another...",
+                    "The bird landed on the fallen...",
+                    "Chop the tree and make a...",
+                ],
+                "hog": [
+                    "Another word for pig is a...",
+                    "The greedy one is a...",
+                    "On the farm there is a big...",
+                ],
+                "fog": [
+                    "We couldn't see anything because of the thick...",
+                    "The morning mist is called...",
+                    "The car drove slowly through the...",
+                    "It's so misty - there's lots of...",
+                ],
+                "jog": [
+                    "In the morning, Daddy goes for a...",
+                    "Not running fast, but going for a...",
+                    "Around the park, let's have a...",
+                    "For exercise, people like to...",
+                ],
+
+                // -ot family
+                "hot": [
+                    "The summer sun is so...",
+                    "Don't touch the oven - it's very...",
+                    "This soup is too...",
+                    "Peppers can be spicy and...",
+                ],
+                "pot": [
+                    "The soup bubbles in the big...",
+                    "The pretty flower grows in a...",
+                    "Mummy stirs dinner in the cooking...",
+                    "The leprechaun's gold is in a...",
+                ],
+                "dot": [
+                    "Draw a circle starting from a little...",
+                    "Connect all the...",
+                    "A tiny spot is called a...",
+                    "On the ladybird's back is a black...",
+                ],
+                "cot": [
+                    "The newborn baby sleeps in a...",
+                    "A small bed for babies is called a...",
+                    "Rock the sleeping baby in the...",
+                ],
+                "got": [
+                    "Guess what? Today I...",
+                    "For my birthday, I...",
+                    "Look what I...",
+                    "Finally, we...",
+                ],
+                "lot": [
+                    "I love you such a...",
+                    "That's a whole...",
+                    "There were so many - quite a...",
+                    "Thank you ever so much - thanks a...",
+                ],
+                "not": [
+                    "Maybe yes, maybe...",
+                    "I do like green eggs - wait, no, I do...",
+                    "Is it or is it...",
+                    "Believe it or...",
+                ],
+
+                // -op family
+                "top": [
+                    "Spin the spinning...",
+                    "Climb the mountain to reach the...",
+                    "The star goes on the Christmas tree...",
+                    "Go up, up, up, all the way to the...",
+                ],
+                "mop": [
+                    "Clean up the spill with a...",
+                    "Swish swash goes the...",
+                    "The janitor uses a...",
+                    "For wet floors, grab the...",
+                ],
+                "hop": [
+                    "The bunny loves to...",
+                    "Jump on one foot and...",
+                    "Frogs go...",
+                    "Kangaroos like to...",
+                ],
+                "pop": [
+                    "Poke the balloon and it will...",
+                    "The bubble is about to...",
+                    "Bang! That was a...",
+                    "The fireworks go...",
+                ],
+                "cop": [
+                    "A police officer is sometimes called a...",
+                    "Here comes the traffic...",
+                    "Another word for police is...",
+                ],
+
+                // -ob family
+                "job": [
+                    "Well done! That's a good...",
+                    "You did it! What a great...",
+                    "Brilliant work - excellent...",
+                    "When you grow up, what will your...",
+                ],
+                "mob": [
+                    "A large crowd is called a...",
+                    "The angry villagers formed a...",
+                    "A group of kangaroos is called a...",
+                ],
+                "sob": [
+                    "When you're really sad, you might...",
+                    "Don't cry, don't...",
+                    "Hearing the sad story made me...",
+                ],
+                "cob": [
+                    "Eat the corn right off the...",
+                    "Butter the corn on the...",
+                    "Summer barbecues have corn on the...",
+                ],
+
+                // -ug family
+                "bug": [
+                    "Look! Crawling on the leaf is a tiny...",
+                    "A ladybird is a type of...",
+                    "Under the rock, we found a little...",
+                    "The garden has many a...",
+                ],
+                "hug": [
+                    "You look like you need a big...",
+                    "Come here and give me a...",
+                    "Teddy bears are perfect for a...",
+                    "A squeeze with your arms is a...",
+                ],
+                "mug": [
+                    "Hot chocolate tastes best in a...",
+                    "Pour the tea into the...",
+                    "Daddy's morning coffee goes in his...",
+                    "Warm your hands on the cozy...",
+                ],
+                "rug": [
+                    "Sit down on the soft fluffy...",
+                    "The cat loves sleeping on the...",
+                    "In front of the fireplace is a warm...",
+                    "Your toes feel nice on the...",
+                ],
+                "tug": [
+                    "Pull the rope and give it a...",
+                    "The dog wants to play...",
+                    "Give the door handle a...",
+                    "In the game, we play...",
+                ],
+                "dug": [
+                    "The dog buried his bone - he...",
+                    "To plant the flower, first we...",
+                    "The pirates...",
+                    "Looking for treasure, they...",
+                ],
+                "jug": [
+                    "Pour the orange juice from the...",
+                    "The lemonade is in the big...",
+                    "Fill up your cup from the...",
+                    "Water the plants from the...",
+                ],
+
+                // -un family
+                "sun": [
+                    "Shining brightly in the sky is the...",
+                    "What gives us light in the daytime? The...",
+                    "Put on sunscreen - here comes the...",
+                    "The flowers turn to face the...",
+                ],
+                "run": [
+                    "On your marks, get set...",
+                    "The dog is chasing its tail - watch it...",
+                    "Fast as the wind, off you...",
+                    "Ready to race? Let's...",
+                ],
+                "fun": [
+                    "Playing with you is so much...",
+                    "The party was such good...",
+                    "Splashing in puddles is...",
+                    "What a day - we had such...",
+                ],
+                "bun": [
+                    "The tasty burger sits in a...",
+                    "For Easter, we eat a hot cross...",
+                    "Fresh from the bakery, a yummy...",
+                    "A small bread roll is called a...",
+                ],
+                "gun": [
+                    "On a hot day, play with a water...",
+                    "Squirt squirt goes the water...",
+                    "The starting pistol is a toy...",
+                ],
+
+                // -ut family
+                "cut": [
+                    "Use the scissors to carefully...",
+                    "The baker had to...",
+                    "Slice and...",
+                    "To open the box, we need to...",
+                ],
+                "nut": [
+                    "The squirrel grabbed the tasty...",
+                    "Inside the shell is a...",
+                    "Crunch on a healthy...",
+                    "A pea is a...",
+                ],
+                "hut": [
+                    "On the beach stands a little wooden...",
+                    "The tiny house in the woods is a...",
+                    "Pizza is made in a pizza...",
+                    "The shepherd stayed in a small...",
+                ],
+                "but": [
+                    "I wanted ice cream...",
+                    "It looked scary...",
+                    "I'm tired...",
+                    "Yes I will...",
+                ],
+                "gut": [
+                    "Always trust your...",
+                    "I have a feeling in my...",
+                    "Listen to your...",
+                ],
+
+                // -ub family
+                "cub": [
+                    "A baby bear is called a...",
+                    "The mother lion protects her...",
+                    "The fluffy young wolf is a...",
+                    "A young fox is called a...",
+                ],
+                "tub": [
+                    "Time for a bath - get in the...",
+                    "The ice cream comes in a...",
+                    "Splish splash in the...",
+                    "Fill the...",
+                ],
+                "rub": [
+                    "Clean the magic lamp and give it a...",
+                    "Your back is itchy - give it a...",
+                    "To make it shiny, give it a...",
+                    "Lotion needs a...",
+                ],
+                "sub": [
+                    "Deep underwater goes the...",
+                    "A sandwich that's long is called a...",
+                    "The underwater boat is a...",
+                ],
+                "hub": [
+                    "The centre of the wheel is the...",
+                    "The airport is a busy travel...",
+                    "The main centre is called the...",
+                ],
+
+                // -um family
+                "gum": [
+                    "Chew on the bubble...",
+                    "Blow a bubble with your...",
+                    "Your teeth are inside your...",
+                    "Stick with...",
+                ],
+                "hum": [
+                    "The bee goes buzz and...",
+                    "When you don't know the words, you can...",
+                    "The happy tune - just...",
+                    "Listen to the song and...",
+                ],
+                "sum": [
+                    "Add them all up and get the...",
+                    "Two plus two - what's the...",
+                    "In maths, we find the...",
+                    "The total is called the...",
+                ],
+                "mum": [
+                    "Who gives the best cuddles? My...",
+                    "I love you so much...",
+                    "Look what I made for you...",
+                    "The best person in the world is...",
+                ],
+
+                // Fallback templates
+                "_noun": ["I can see a...", "Look at the...", "Where is the..."],
+                "_verb": ["Watch me...", "I can...", "Let's..."],
+                "_adj": ["It is so...", "This is...", "That's very..."],
+            }
+        };
+
+        // Practice state variables
+        let availableWords = [];
+        let currentWordIndex = 0;
+        let currentSentenceIndex = 0;
 
         // Initialize data structure
         let letterData = {};
@@ -743,6 +1886,7 @@
         function saveData() {
             localStorage.setItem('letter-tracker-data', JSON.stringify(letterData));
             updateStats();
+            updatePracticeTab();
         }
 
         // Update statistics
@@ -1128,6 +2272,11 @@
 
                 tab.classList.add('active');
                 document.getElementById(tabName + '-content').classList.add('active');
+
+                // Update practice tab when selected
+                if (tabName === 'practice') {
+                    updatePracticeTab();
+                }
             });
         });
 
@@ -1209,11 +2358,192 @@
             }
         });
 
+        // ===== Word Practice Functions =====
+
+        // Get green letters from uppercase phonics
+        function getGreenLetters() {
+            const green = new Set();
+            lettersByFrequency.forEach(letter => {
+                if (letterData[letter]['uppercase-phonics'] === 'green') {
+                    green.add(letter.toLowerCase());
+                }
+            });
+            return green;
+        }
+
+        // Check if word can be decoded with available letters
+        function canDecodeWord(wordObj, greenLetters) {
+            return wordObj.letters.every(l => greenLetters.has(l));
+        }
+
+        // Get all available words that can be decoded
+        function getAvailableWords() {
+            const green = getGreenLetters();
+            return WORD_DATABASE.words.filter(w => canDecodeWord(w, green));
+        }
+
+        // Update the practice tab
+        function updatePracticeTab() {
+            availableWords = getAvailableWords();
+            const greenLetters = getGreenLetters();
+
+            const emptyState = document.getElementById('practiceEmpty');
+            const card = document.getElementById('practiceCard');
+            const nav = document.getElementById('practiceNav');
+            const info = document.getElementById('practiceInfo');
+            const status = document.getElementById('practiceStatus');
+
+            if (availableWords.length === 0) {
+                // Show empty state
+                emptyState.style.display = 'block';
+                card.style.display = 'none';
+                nav.style.display = 'none';
+                info.style.display = 'none';
+                status.textContent = '';
+
+                // Check what's missing and give specific advice
+                const vowels = ['a', 'e', 'i', 'o', 'u'];
+                const hasVowel = vowels.some(v => greenLetters.has(v));
+                const consonants = [...greenLetters].filter(l => !vowels.includes(l));
+
+                if (!hasVowel) {
+                    emptyState.innerHTML = `
+                        <h3>Learn a vowel first!</h3>
+                        <p>You need at least one vowel (A, E, I, O, U) to form words.</p>
+                        <p><strong>Suggested:</strong> Start with A - it's in many simple words!</p>
+                    `;
+                } else if (consonants.length === 0) {
+                    emptyState.innerHTML = `
+                        <h3>Great! Now learn a consonant!</h3>
+                        <p>You have vowel${greenLetters.size > 1 ? 's' : ''}: ${[...greenLetters].join(', ').toUpperCase()}</p>
+                        <p><strong>Suggested:</strong> T, S, or N make lots of words!</p>
+                    `;
+                } else {
+                    emptyState.innerHTML = `
+                        <h3>Almost there!</h3>
+                        <p>You know: ${[...greenLetters].join(', ').toUpperCase()}</p>
+                        <p>Learn one more letter to unlock words!</p>
+                        <p><strong>Suggested:</strong> ${getSuggestedLetter(greenLetters)}</p>
+                    `;
+                }
+            } else {
+                // Show practice interface
+                emptyState.style.display = 'none';
+                card.style.display = 'block';
+                nav.style.display = 'flex';
+                info.style.display = 'block';
+
+                // Reset indices if needed
+                if (currentWordIndex >= availableWords.length) {
+                    currentWordIndex = 0;
+                }
+                currentSentenceIndex = 0;
+
+                renderPracticeWord();
+            }
+        }
+
+        // Get suggested next letter to learn
+        function getSuggestedLetter(greenLetters) {
+            // Priority letters that unlock many words
+            const priority = ['t', 'a', 's', 'n', 'i', 'e', 'o', 'r', 'h', 'c', 'd', 'p', 'm'];
+            for (const letter of priority) {
+                if (!greenLetters.has(letter)) {
+                    return letter.toUpperCase();
+                }
+            }
+            return 'Any letter!';
+        }
+
+        // Render current word with sentence
+        function renderPracticeWord() {
+            const wordObj = availableWords[currentWordIndex];
+            const sentences = WORD_DATABASE.sentences[wordObj.word] || WORD_DATABASE.sentences['_noun'];
+
+            // Handle sentence index
+            if (currentSentenceIndex >= sentences.length) {
+                currentSentenceIndex = 0;
+            }
+            if (currentSentenceIndex < 0) {
+                currentSentenceIndex = sentences.length - 1;
+            }
+
+            const sentence = sentences[currentSentenceIndex];
+
+            // Display sentence
+            document.getElementById('sentenceDisplay').textContent = sentence;
+
+            // Display target word large and highlighted
+            document.getElementById('targetWord').textContent = wordObj.word.toUpperCase();
+
+            // Show word family if available
+            const wordInfo = document.getElementById('wordInfo');
+            if (wordObj.family) {
+                wordInfo.textContent = `Word family: ${wordObj.family}`;
+                wordInfo.style.display = 'block';
+            } else if (wordObj.type === 'vc') {
+                wordInfo.textContent = '2-letter word';
+                wordInfo.style.display = 'block';
+            } else {
+                wordInfo.style.display = 'none';
+            }
+
+            // Update word counter
+            document.getElementById('wordCounter').textContent =
+                `Word ${currentWordIndex + 1} of ${availableWords.length}`;
+
+            // Show letters being used
+            const lettersUsed = document.getElementById('lettersUsed');
+            const greenLetters = getGreenLetters();
+            lettersUsed.innerHTML = [...greenLetters].map(l =>
+                `<span class="letter-chip">${l.toUpperCase()}</span>`
+            ).join('');
+
+            // Update status
+            const status = document.getElementById('practiceStatus');
+            status.textContent = `${availableWords.length} word${availableWords.length !== 1 ? 's' : ''} available with your green letters`;
+        }
+
+        // Navigation functions
+        window.nextWord = function() {
+            currentWordIndex++;
+            if (currentWordIndex >= availableWords.length) {
+                currentWordIndex = 0;
+            }
+            currentSentenceIndex = 0;
+            renderPracticeWord();
+        }
+
+        window.prevWord = function() {
+            currentWordIndex--;
+            if (currentWordIndex < 0) {
+                currentWordIndex = availableWords.length - 1;
+            }
+            currentSentenceIndex = 0;
+            renderPracticeWord();
+        }
+
+        window.nextSentence = function() {
+            currentSentenceIndex++;
+            renderPracticeWord();
+        }
+
+        window.prevSentence = function() {
+            currentSentenceIndex--;
+            renderPracticeWord();
+        }
+
+        // Add event listeners for practice navigation
+        document.getElementById('nextWord').addEventListener('click', nextWord);
+        document.getElementById('prevSentence').addEventListener('click', prevSentence);
+        document.getElementById('nextSentence').addEventListener('click', nextSentence);
+
         // Initialize app
         initializeLetterData();
         renderLetterGrid('uppercase');
         renderLetterGrid('lowercase');
         updateStats();
+        updatePracticeTab();
     </script>
 </body>
 </html>
